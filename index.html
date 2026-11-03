@@ -37,7 +37,7 @@
         </div>
         <div>
           <h1 class="font-bold text-lg leading-tight">Audit Aset Advanced</h1>
-          <p class="text-xs text-slate-400">Kamera In-App • Master CRUD • Breakdown Qty • Chart</p>
+          <p class="text-xs text-slate-400">Kamera In-App • Master CRUD • Breakdown Qty • Export Foto Excel</p>
         </div>
       </div>
       
@@ -1396,10 +1396,25 @@
 
     function exportToExcel() {
       const rows = (window.assetsData || []).map((a, i) => ({
-        "No": i+1, "No Aset": a.noAset, "Nama Aset": a.namaAset, "Model Aset": a.modelAset || "-", 
-        "Qty Master": a.qtyMaster || 1, "Satuan": a.satuan || "Unit",
-        "Qty Baik": a.qtyBaik || 0, "Qty Rusak Ringan": a.qtyRusakRingan || 0, "Qty Scrap": a.qtyScrap || 0, "Qty Hilang": a.qtyHilang || 0,
-        "Lokasi Lama": a.lokasiLama, "Lokasi Baru": a.lokasiBaru || "-", "Status Audit": a.statusAudit
+        "No": i + 1, 
+        "No Aset": a.noAset, 
+        "Nama Aset": a.namaAset, 
+        "Model Aset": a.modelAset || "-", 
+        "Qty Master": a.qtyMaster || 1, 
+        "Satuan": a.satuan || "Unit",
+        "Qty Baik": a.qtyBaik || 0, 
+        "Qty Rusak Ringan": a.qtyRusakRingan || 0, 
+        "Qty Scrap": a.qtyScrap || 0, 
+        "Qty Hilang": a.qtyHilang || 0,
+        "Lokasi Lama": a.lokasiLama, 
+        "Lokasi Baru": a.lokasiBaru || "-", 
+        "PIC Lama": a.picLama || "-",
+        "PIC Baru": a.picBaru || "-",
+        "Status Audit": a.statusAudit,
+        "Foto Master": a.fotoLama || "-",
+        "Foto Fisik Utama": (a.multiFoto && a.multiFoto[0]) ? a.multiFoto[0] : "-",
+        "Foto Tag Barcode": (a.multiFoto && a.multiFoto[1]) ? a.multiFoto[1] : "-",
+        "Foto Detail Kerusakan": (a.multiFoto && a.multiFoto[2]) ? a.multiFoto[2] : "-"
       }));
       const ws = XLSX.utils.json_to_sheet(rows);
       const wb = XLSX.utils.book_new();
