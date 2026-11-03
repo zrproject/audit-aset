@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistem Audit Data Aset Perusahaan Advanced</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- SheetJS untuk Export & Import Excel -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <!-- Html5-QRCode Scanner Library -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <!-- Signature Pad Library -->
+  <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+  <!-- Chart.js Library untuk Analitik Visual -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    @media print {
+      body * { visibility: hidden; }
+      #printableBA, #printableBA * { visibility: visible; }
+      #printableBA { position: absolute; left: 0; top: 0; width: 100%; }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 font-sans min-h-screen text-slate-800 pb-12">
+
+  <!-- TOP NAVBAR -->
+  <header class="bg-slate-900 text-white sticky top-0 z-40 shadow-md">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-2">
+      <div class="flex items-center space-x-3">
+        <div class="bg-blue-600 p-2 rounded-lg text-white">
+          <i data-lucide="shield-check" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg leading-tight">Audit Aset Advanced</h1>
+          <p class="text-xs text-slate-400">Barcode Scanner • Multi-Foto • Breakdown Qty • Chart Analitik</p>
+        </div>
+      </div>
+      
+      <!-- Status Firestore Badge -->
+      <div id="firebaseStatusBadge" class="flex items-center space-x-2 bg-slate-800 px-3 py-1.5 rounded-full text-xs text-slate-300 border border-slate-700">
+        <span class="w-2.5 h-2.5 rounded-full bg-yellow-500 animate-pulse" id="statusDot"></span>
+        <span id="statusText">Menghubungkan Firestore...</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+
+    <!-- DASHBOARD STATISTIK -->
+    <section class="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div class="text-slate-500 text-xs font-medium uppercase">Total Item Master</div>
+        <div class="text-2xl font-bold text-slate-800 mt-1" id="statTotal">0</div>
+        <div class="text-xs text-slate-400 mt-1">Master Data Aset</div>
+      </div>
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div class="text-slate-500 text-xs font-medium uppercase">Sudah Diaudit</div>
+        <div class="text-2xl font-bold text-blue-600 mt-1" id="statAudit">0</div>
+        <div class="text-xs text-blue-500 mt-1" id="statAuditPercent">0% Progress</div>
+      </div>
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div class="text-slate-500 text-xs font-medium uppercase">Kondisi Baik (Qty)</div>
+        <div class="text-2xl font-bold text-emerald-600 mt-1" id="statQtyBaik">0</div>
+        <div class="text-xs text-emerald-500 mt-1">Total Unit Baik</div>
+      </div>
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div class="text-slate-500 text-xs font-medium uppercase">Rusak / Scrap (Qty)</div>
+        <div class="text-2xl font-bold text-amber-600 mt-1" id="statQtyRusak">0</div>
+        <div class="text-xs text-amber-500 mt-1">Perlu Afkir / Repair</div>
+      </div>
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm col-span-2 md:col-span-1">
+        <div class="text-slate-500 text-xs font-medium uppercase">Hilang (Qty)</div>
+        <div class="text-2xl font-bold text-rose-600 mt-1" id="statQtyHilang">0</div>
+        <div class="text-xs text-rose-500 mt-1">Total Unit Hilang</div>
+      </div>
+    </section>
+
+    <!-- CHART ANALITIK VISUAL (NO 4) -->
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
+        <div class="flex items-center space-x-2 border-b border-slate-100 pb-2">
+          <i data-lucide="pie-chart" class="w-4 h-4 text-blue-600"></i>
+          <h3 class="text-sm font-bold text-slate-800">Proporsi Kondisi Fisik Unit</h3>
+        </div>
+        <div class="relative h-48 flex items-center justify-center">
+          <canvas id="chartKondisi"></canvas>
+        </div>
+      </div>
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3 md:col-span-2">
+        <div class="flex items-center space-x-2 border-b border-slate-100 pb-2">
+          <i data-lucide="bar-chart-2" class="w-4 h-4 text-emerald-600"></i>
+          <h3 class="text-sm font-bold text-slate-800">Perbandingan Qty Master vs Hasil Audit per Lokasi</h3>
+        </div>
+        <div class="relative h-48">
+          <canvas id="chartLokasi"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- ACTION BUTTONS & TAB NAV -->
+    <section class="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+      <div class="flex items-center space-x-2">
+        <button id="btnTabAudit" onclick="switchTab('audit')" class="px-4 py-2 rounded-lg text-sm font-semibold bg-blue-600 text-white shadow-sm flex items-center space-x-2 transition">
+          <i data-lucide="edit-3" class="w-4 h-4"></i>
+          <span>Form Audit</span>
+        </button>
+        <button id="btnTabTable" onclick="switchTab('table')" class="px-4 py-2 rounded-lg text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center space-x-2 transition">
+          <i data-lucide="table" class="w-4 h-4"></i>
+          <span>Matriks & Laporan</span>
+        </button>
+        <button id="btnTabLogs" onclick="switchTab('logs')" class="px-4 py-2 rounded-lg text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center space-x-2 transition">
+          <i data-lucide="history" class="w-4 h-4"></i>
+          <span>Audit Log</span>
+        </button>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <button onclick="openAddMasterModal()" class="px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-sm font-medium flex items-center space-x-1.5 transition">
+          <i data-lucide="plus" class="w-4 h-4"></i>
+          <span>Tambah Master</span>
+        </button>
+        <label class="px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-sm font-medium flex items-center space-x-1.5 cursor-pointer transition">
+          <i data-lucide="file-up" class="w-4 h-4"></i>
+          <span>Import Excel</span>
+          <input type="file" id="excelInput" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleImportExcel(event)">
+        </label>
+        <button onclick="exportToExcel()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium flex items-center space-x-1.5 transition">
+          <i data-lucide="download" class="w-4 h-4"></i>
+          <span>Export Excel</span>
+        </button>
+        <button onclick="printBeritaAcara()" class="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium flex items-center space-x-1.5 transition">
+          <i data-lucide="printer" class="w-4 h-4"></i>
+          <span>Cetak BA (PDF)</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- SECTION 1: FORM AUDIT -->
+    <section id="sectionAudit" class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-6">
+      <div class="border-b border-slate-200 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-2">
+        <div>
+          <h2 class="text-lg font-bold text-slate-800 flex items-center space-x-2">
+            <i data-lucide="scan" class="w-5 h-5 text-blue-600"></i>
+            <span>Form Input Hasil Audit Lapangan</span>
+          </h2>
+          <p class="text-xs text-slate-500">Pilih aset yang belum diaudit untuk memasukkan data verifikasi fisik.</p>
+        </div>
+        <div class="flex items-center space-x-2">
+          <div id="unAuditedBadge" class="bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1 rounded-full text-xs font-semibold">
+            Sisa Belum Audit: <span id="unAuditedCount">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCANNER CAMERA & SELECTOR -->
+      <div class="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+        <label class="block text-sm font-semibold text-slate-700">Pilih Aset Yang Belum Diaudit:</label>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div class="relative md:col-span-1 flex space-x-2">
+            <input type="text" id="assetSearchInput" oninput="filterAssetDropdown()" placeholder="Ketik No Aset / Nama..." class="w-full pl-3 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            <button onclick="openScannerModal()" title="Scan Camera Barcode" class="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center justify-center">
+              <i data-lucide="qr-code" class="w-5 h-5"></i>
+            </button>
+          </div>
+          <div class="md:col-span-3">
+            <select id="selectAssetId" onchange="onAssetSelected()" class="w-full py-2 px-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white font-medium text-slate-800">
+              <option value="">-- Pilih Aset Belum Diaudit --</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- FORM COMPARISON -->
+      <div id="auditFormContainer" class="hidden space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          <!-- MASTER LAMA -->
+          <div class="bg-slate-50 border border-slate-300 rounded-xl p-5 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">DATA MASTER (SYSTEM LAMA)</span>
+              <span class="bg-slate-200 text-slate-700 px-2 py-0.5 rounded text-xs font-semibold" id="oldStatusAudit">Belum Audit</span>
+            </div>
+            <div class="space-y-3">
+              <div>
+                <label class="text-xs text-slate-500">Nomor Aset / Barcode</label>
+                <div class="font-bold text-slate-800 text-base" id="oldNoAset">-</div>
+              </div>
+              <div>
+                <label class="text-xs text-slate-500">Nama Aset</label>
+                <div class="font-medium text-slate-800" id="oldNamaAset">-</div>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="text-xs text-slate-500">Total Qty Master</label>
+                  <div class="text-base font-bold text-blue-700" id="oldQtyMaster">1 Unit</div>
+                </div>
+                <div>
+                  <label class="text-xs text-slate-500">Lokasi Lama</label>
+                  <div class="text-sm font-semibold text-slate-700" id="oldLokasi">-</div>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="text-xs text-slate-500">PIC Lama</label>
+                  <div class="text-sm font-semibold text-slate-700" id="oldPic">-</div>
+                </div>
+                <div>
+                  <label class="text-xs text-slate-500">Kondisi Master</label>
+                  <div><span id="oldKondisiBadge" class="inline-block px-2 py-0.5 rounded text-xs font-bold bg-slate-200 text-slate-700">-</span></div>
+                </div>
+              </div>
+              <div>
+                <label class="text-xs text-slate-500">Foto Master</label>
+                <div class="mt-1 w-full h-32 bg-slate-200 rounded-lg overflow-hidden flex items-center justify-center border border-slate-300">
+                  <img id="oldFotoImg" src="" alt="Foto Lama" class="w-full h-full object-cover hidden">
+                  <span id="oldFotoPlaceholder" class="text-xs text-slate-400">Tidak ada foto master</span>
+                </div>
+              </div>
+              <div>
+                <label class="text-xs text-slate-500">Keterangan Master</label>
+                <div class="text-xs text-slate-600 bg-white p-2 rounded border border-slate-200" id="oldKeterangan">-</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- HASIL AUDIT BARU -->
+          <div class="bg-blue-50/50 border border-blue-200 rounded-xl p-5 space-y-4">
+            <div class="flex items-center justify-between border-b border-blue-200 pb-2">
+              <span class="text-xs font-bold text-blue-700 uppercase tracking-wider">HASIL AUDIT (BREAKDOWN QTY FISIK)</span>
+              <span class="text-xs text-blue-600 font-semibold" id="auditModeLabel">Input Verifikasi</span>
+            </div>
+
+            <form id="formSubmitAudit" onsubmit="handleSaveAudit(event)" class="space-y-4">
+              
+              <!-- INPUT BREAKDOWN QTY AUDIT -->
+              <div class="bg-white p-3 rounded-lg border border-blue-200 space-y-3">
+                <label class="block text-xs font-bold text-blue-900 uppercase">Rincian Fisik Kondisi Unit (Qty):</label>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <div>
+                    <label class="block text-[11px] font-semibold text-emerald-700 mb-1">Baik</label>
+                    <input type="number" id="qtyBaik" min="0" value="0" oninput="calcTotalAuditQty()" class="w-full px-2 py-1.5 border border-slate-300 rounded text-sm text-center font-bold text-emerald-600">
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-semibold text-amber-700 mb-1">Rusak Ringan</label>
+                    <input type="number" id="qtyRusakRingan" min="0" value="0" oninput="calcTotalAuditQty()" class="w-full px-2 py-1.5 border border-slate-300 rounded text-sm text-center font-bold text-amber-600">
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-semibold text-rose-700 mb-1">Scrap/Berat</label>
+                    <input type="number" id="qtyScrap" min="0" value="0" oninput="calcTotalAuditQty()" class="w-full px-2 py-1.5 border border-slate-300 rounded text-sm text-center font-bold text-rose-600">
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-semibold text-purple-700 mb-1">Hilang</label>
+                    <input type="number" id="qtyHilang" min="0" value="0" oninput="calcTotalAuditQty()" class="w-full px-2 py-1.5 border border-slate-300 rounded text-sm text-center font-bold text-purple-600">
+                  </div>
+                </div>
+                <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+                  <span>Total Qty Ditemukan: <strong id="sumAuditQty" class="text-blue-700">0</strong></span>
+                  <span id="qtyDiffStatus" class="px-2 py-0.5 rounded font-bold bg-slate-100 text-slate-600">Sesuai</span>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Lokasi Baru (Fisik)</label>
+                <input type="text" id="newLokasi" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">Kondisi Dominan</label>
+                  <select id="newKondisi" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
+                    <option value="Baik">Baik</option>
+                    <option value="Rusak Ringan">Rusak Ringan</option>
+                    <option value="Rusak Berat">Rusak Berat / Scrap</option>
+                    <option value="Hilang">Hilang / Tidak Ditemukan</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">Status Aset Baru</label>
+                  <select id="newStatusAset" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
+                    <option value="Aktif / Used">Aktif / Used</option>
+                    <option value="Idle / Cadangan">Idle / Cadangan</option>
+                    <option value="Mutasi / Pindah">Mutasi / Pindah</option>
+                    <option value="Perlu Perbaikan">Perlu Perbaikan</option>
+                    <option value="Usul Afkir">Usul Afkir</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">PIC Baru / Penanggung Jawab Lapangan</label>
+                <input type="text" id="newPic" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+              </div>
+
+              <!-- MULTI FOTO BUKTI AUDIT -->
+              <div class="space-y-2">
+                <label class="block text-xs font-semibold text-slate-700">Multi-Foto Temuan Lapangan (Max 3 Foto):</label>
+                <div class="grid grid-cols-3 gap-2">
+                  <div>
+                    <span class="text-[10px] text-slate-500">1. Fisik Utama</span>
+                    <input type="file" accept="image/*" onchange="previewMultiImage(event, 0)" class="w-full text-[10px] file:py-1 file:px-1 file:rounded file:border-0 file:bg-blue-600 file:text-white">
+                    <div class="mt-1 h-16 bg-slate-100 rounded border border-slate-300 overflow-hidden flex items-center justify-center">
+                      <img id="previewMulti0" class="w-full h-full object-cover hidden">
+                      <span id="phMulti0" class="text-[10px] text-slate-400">Kosong</span>
+                    </div>
+                  </div>
+                  <div>
+                    <span class="text-[10px] text-slate-500">2. Tag Barcode</span>
+                    <input type="file" accept="image/*" onchange="previewMultiImage(event, 1)" class="w-full text-[10px] file:py-1 file:px-1 file:rounded file:border-0 file:bg-blue-600 file:text-white">
+                    <div class="mt-1 h-16 bg-slate-100 rounded border border-slate-300 overflow-hidden flex items-center justify-center">
+                      <img id="previewMulti1" class="w-full h-full object-cover hidden">
+                      <span id="phMulti1" class="text-[10px] text-slate-400">Kosong</span>
+                    </div>
+                  </div>
+                  <div>
+                    <span class="text-[10px] text-slate-500">3. Detail Kerusakan</span>
+                    <input type="file" accept="image/*" onchange="previewMultiImage(event, 2)" class="w-full text-[10px] file:py-1 file:px-1 file:rounded file:border-0 file:bg-blue-600 file:text-white">
+                    <div class="mt-1 h-16 bg-slate-100 rounded border border-slate-300 overflow-hidden flex items-center justify-center">
+                      <img id="previewMulti2" class="w-full h-full object-cover hidden">
+                      <span id="phMulti2" class="text-[10px] text-slate-400">Kosong</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- TANDA TANGAN DIGITAL AUDITOR -->
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <label class="block text-xs font-semibold text-slate-700">Tanda Tangan Digital Auditor:</label>
+                  <button type="button" onclick="clearSignature()" class="text-[10px] text-rose-600 underline font-medium">Clear Canvas</button>
+                </div>
+                <div class="border border-slate-300 rounded-lg bg-white overflow-hidden">
+                  <canvas id="signatureCanvas" class="w-full h-20 touch-none cursor-crosshair"></canvas>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Keterangan / Catatan Rekonsiliasi Audit</label>
+                <textarea id="newKeterangan" rows="2" placeholder="Catatan selisih qty, kerusakan, atau mutasi..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+              </div>
+
+              <div class="pt-2">
+                <button type="submit" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition flex items-center justify-center space-x-2">
+                  <i data-lucide="save" class="w-4 h-4"></i>
+                  <span id="btnSubmitAuditLabel">Simpan Hasil Audit & Sign</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: MATRIKS TABEL LAPORAN -->
+    <section id="sectionTable" class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-4 hidden">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-lg font-bold text-slate-800 flex items-center space-x-2">
+            <i data-lucide="file-spreadsheet" class="w-5 h-5 text-emerald-600"></i>
+            <span>Matriks Laporan Audit Aset & Breakdown Qty</span>
+          </h2>
+          <p class="text-xs text-slate-500">Tabel pembanding data master (lama) dan rincian fisik kondisi unit (baru).</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <select id="filterAuditStatus" onchange="renderTable()" class="px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            <option value="ALL">Semua Status Audit</option>
+            <option value="Belum Audit">Belum Diaudit</option>
+            <option value="Sudah Audit">Sudah Diaudit</option>
+            <option value="Selisih">Ada Selisih Qty / Lokasi</option>
+          </select>
+          <div class="relative">
+            <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5"></i>
+            <input type="text" id="tableSearch" oninput="renderTable()" placeholder="Cari aset / PIC..." class="pl-8 pr-3 py-1.5 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          </div>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto border border-slate-200 rounded-xl">
+        <table class="w-full text-left text-xs text-slate-700">
+          <thead class="bg-slate-800 text-slate-200 font-semibold uppercase tracking-wider">
+            <tr>
+              <th class="p-3 border-b border-slate-700 text-center">No</th>
+              <th class="p-3 border-b border-slate-700">No. Aset</th>
+              <th class="p-3 border-b border-slate-700">Nama Aset</th>
+              <th class="p-3 border-b border-slate-700 text-center bg-slate-700">Qty Master</th>
+              <th class="p-3 border-b border-slate-700 bg-slate-700">Rincian Qty Audit (B / RR / Scrap / H)</th>
+              <th class="p-3 border-b border-slate-700">Lokasi (Lama / Baru)</th>
+              <th class="p-3 border-b border-slate-700">PIC (Lama / Baru)</th>
+              <th class="p-3 border-b border-slate-700 text-center">Status Audit</th>
+              <th class="p-3 border-b border-slate-700 text-center">Aksi / Edit</th>
+            </tr>
+          </thead>
+          <tbody id="assetTableBody" class="divide-y divide-slate-200 bg-white">
+            <!-- Dynamic Rows -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECTION 3: AUDIT TRAIL LOGS -->
+    <section id="sectionLogs" class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-4 hidden">
+      <div class="flex items-center space-x-2 border-b border-slate-200 pb-3">
+        <i data-lucide="history" class="w-5 h-5 text-indigo-600"></i>
+        <h2 class="text-lg font-bold text-slate-800">Riwayat Jejak Audit (Audit Trail Log)</h2>
+      </div>
+      <div id="logsContainer" class="space-y-3 font-mono text-xs max-h-96 overflow-y-auto">
+        <!-- Logs List -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL CAMERA SCANNER -->
+  <div id="scannerModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+        <h3 class="font-bold text-slate-800 text-sm">Scan Barcode / QR Tag Aset</h3>
+        <button onclick="closeScannerModal()" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div id="reader" class="w-full h-64 bg-slate-900 rounded-lg overflow-hidden"></div>
+      <p class="text-xs text-center text-slate-500">Arahkan kamera HP ke stiker barcode/QR code pada fisik aset.</p>
+    </div>
+  </div>
+
+  <!-- MODAL TAMBAH MASTER ASET -->
+  <div id="addMasterModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+        <h3 class="font-bold text-slate-800 text-base">Tambah Master Data Aset</h3>
+        <button onclick="closeAddMasterModal()" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <form id="formMasterAset" onsubmit="handleAddMaster(event)" class="space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1">No. Aset / Tag Barcode</label>
+            <input type="text" id="mNoAset" required placeholder="AST-00X" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1">Nama Aset</label>
+            <input type="text" id="mNamaAset" required placeholder="Laptop / Meja" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1">Qty Master</label>
+            <input type="number" id="mQtyMaster" required min="1" value="1" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-bold text-blue-600">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1">Lokasi Master</label>
+            <input type="text" id="mLokasi" required placeholder="Lantai 2 - Ruang IT" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1">PIC Master</label>
+            <input type="text" id="mPic" required placeholder="Budi Santoso" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1">Kondisi Master</label>
+            <select id="mKondisi" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white">
+              <option value="Baik">Baik</option>
+              <option value="Rusak Ringan">Rusak Ringan</option>
+              <option value="Rusak Berat">Rusak Berat</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-700 mb-1">Keterangan Master</label>
+          <textarea id="mKeterangan" rows="2" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="Catatan awal..."></textarea>
+        </div>
+        <div class="pt-2 flex justify-end space-x-2">
+          <button type="button" onclick="closeAddMasterModal()" class="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-600">Batal</button>
+          <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700">Simpan Master Data</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- PRINT TEMPLATE BERITA ACARA AUDIT (PDF) -->
+  <div id="printableBA" class="hidden p-8 bg-white text-slate-900">
+    <div class="text-center border-b-2 border-slate-900 pb-4 mb-6">
+      <h1 class="text-2xl font-bold uppercase tracking-wider">BERITA ACARA STOCK OPNAME & AUDIT ASET</h1>
+      <p class="text-sm text-slate-600">Nomor: BA-AUDIT/${new Date().getFullYear()}/${new Date().getMonth()+1}</p>
+    </div>
+    <div class="text-xs space-y-2 mb-6">
+      <p>Pada hari ini, <strong>${new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</strong>, telah dilaksanakan verifikasi fisik dan audit data aset perusahaan dengan rincian hasil sebagai berikut:</p>
+    </div>
+    <table class="w-full border-collapse border border-slate-400 text-[10px] mb-6">
+      <thead>
+        <tr class="bg-slate-200">
+          <th class="border border-slate-400 p-1">No</th>
+          <th class="border border-slate-400 p-1">No Aset</th>
+          <th class="border border-slate-400 p-1">Nama Aset</th>
+          <th class="border border-slate-400 p-1">Qty Master</th>
+          <th class="border border-slate-400 p-1">Rincian Audit (B/RR/Scrap/H)</th>
+          <th class="border border-slate-400 p-1">Lokasi (Lama / Baru)</th>
+          <th class="border border-slate-400 p-1">Status Audit</th>
+        </tr>
+      </thead>
+      <tbody id="printTableBody">
+        <!-- Rows Generated for Print -->
+      </tbody>
+    </table>
+    <div class="grid grid-cols-2 gap-8 text-center text-xs mt-12">
+      <div>
+        <p class="mb-12">Tim Auditor Lapangan,</p>
+        <p class="font-bold underline">( ___________________ )</p>
+      </div>
+      <div>
+        <p class="mb-12">Mengetahui / Penanggung Jawab,</p>
+        <p class="font-bold underline">( ___________________ )</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- FIREBASE MODULE & REALTIME SYNC -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
+    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
+    import { 
+      getFirestore, collection, onSnapshot, doc, setDoc, addDoc, deleteDoc, serverTimestamp 
+    } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCLw0hVGoLku-vLQIZh6PbLq84GiSG87jU",
+      authDomain: "audit-aset-bank.firebaseapp.com",
+      projectId: "audit-aset-bank",
+      storageBucket: "audit-aset-bank.firebasestorage.app",
+      messagingSenderId: "364961189879",
+      appId: "1:364961189879:web:7d085c7d7e7a2eef6268f2",
+      measurementId: "G-T8E50F2YSL"
+    };
+
+    window.assetsData = [];
+    window.auditLogs = [];
+    window.db = null;
+    window.useFirestore = false;
+    window.assetsCollectionRef = null;
+    window.logsCollectionRef = null;
+
+    const dummyInitialAssets = [
+      {
+        id: "ast-101",
+        noAset: "AST-2026-001",
+        namaAset: "Laptop Dell Latitude 5420",
+        qtyMaster: 5,
+        lokasiLama: "Lantai 2 - Ruang IT",
+        fotoLama: "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=300",
+        kondisiLama: "Baik",
+        statusAsetLama: "Aktif / Used",
+        keteranganLama: "Pembelian unit 2024",
+        picLama: "Ahmad Rizky",
+        statusAudit: "Belum Audit",
+        qtyBaik: 0, qtyRusakRingan: 0, qtyScrap: 0, qtyHilang: 0,
+        lokasiBaru: "", kondisiBaru: "", statusAsetBaru: "", picBaru: "", keteranganBaru: "", multiFoto: [], signature: "", tanggalAudit: ""
+      }
+    ];
+
+    async function initFirebase() {
+      const badgeDot = document.getElementById('statusDot');
+      const badgeText = document.getElementById('statusText');
+
+      try {
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        window.db = getFirestore(app);
+
+        try { await signInAnonymously(auth); } catch(aErr) {}
+
+        const pathAssets = "artifacts/1:364961189879:web:7d085c7d7e7a2eef6268f2/public/data/assets";
+        const pathLogs = "artifacts/1:364961189879:web:7d085c7d7e7a2eef6268f2/public/data/logs";
+        window.assetsCollectionRef = collection(window.db, pathAssets);
+        window.logsCollectionRef = collection(window.db, pathLogs);
+
+        onSnapshot(window.assetsCollectionRef, (snapshot) => {
+          if (snapshot.empty && window.assetsData.length === 0) {
+            dummyInitialAssets.forEach(async (item) => {
+              await setDoc(doc(window.assetsCollectionRef, item.id), item);
+            });
+          } else {
+            const list = [];
+            snapshot.forEach(docSnap => list.push({ id: docSnap.id, ...docSnap.data() }));
+            window.assetsData = list;
+            window.updateDashboardAndUI();
+          }
+        });
+
+        onSnapshot(window.logsCollectionRef, (snapshot) => {
+          const logList = [];
+          snapshot.forEach(d => logList.push(d.data()));
+          window.auditLogs = logList.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
+          window.renderLogs();
+        });
+
+        window.useFirestore = true;
+        if (badgeDot) badgeDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500";
+        if (badgeText) badgeText.innerText = "Terhubung ke Firestore (audit-aset-bank)";
+
+      } catch (err) {
+        fallbackLocalMode();
+      }
+    }
+
+    function fallbackLocalMode() {
+      const badgeDot = document.getElementById('statusDot');
+      const badgeText = document.getElementById('statusText');
+      window.useFirestore = false;
+      if (!window.assetsData.length) window.assetsData = dummyInitialAssets;
+      if (badgeDot) badgeDot.className = "w-2.5 h-2.5 rounded-full bg-amber-500";
+      if (badgeText) badgeText.innerText = "Mode Offline / Local Data";
+      window.updateDashboardAndUI();
+    }
+
+    window.saveAssetToStorage = async function(assetObj, logMessage = "") {
+      Swal.fire({ title: 'Menyimpan...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      try {
+        if (window.useFirestore && window.assetsCollectionRef) {
+          await setDoc(doc(window.assetsCollectionRef, assetObj.id), { ...assetObj, updatedAt: serverTimestamp() }, { merge: true });
+          if (logMessage) {
+            await addDoc(window.logsCollectionRef, { message: logMessage, timestamp: Date.now() });
+          }
+        } else {
+          const idx = window.assetsData.findIndex(a => a.id === assetObj.id);
+          if (idx >= 0) window.assetsData[idx] = assetObj;
+          else window.assetsData.push(assetObj);
+          if (logMessage) window.auditLogs.unshift({ message: logMessage, timestamp: Date.now() });
+          window.updateDashboardAndUI();
+          window.renderLogs();
+        }
+        Swal.fire({ icon: 'success', title: 'Berhasil!', timer: 1200, showConfirmButton: false });
+      } catch (e) {
+        Swal.fire({ icon: 'error', title: 'Gagal Simpan', text: e.message });
+      }
+    };
+
+    window.deleteAssetFromStorage = async function(id) {
+      const res = await Swal.fire({ title: 'Hapus Aset?', icon: 'warning', showCancelButton: true });
+      if (res.isConfirmed) {
+        if (window.useFirestore && window.assetsCollectionRef) {
+          await deleteDoc(doc(window.assetsCollectionRef, id));
+        } else {
+          window.assetsData = window.assetsData.filter(a => a.id !== id);
+          window.updateDashboardAndUI();
+        }
+      }
+    };
+
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      initFirebase();
+      initSignaturePad();
+    });
+  </script>
+
+  <!-- APP LOGIC & CHARTS -->
+  <script>
+    let selectedAsset = null;
+    let multiFotoBase64 = ["", "", ""];
+    let html5QrcodeScanner = null;
+    let signaturePad = null;
+    let chartKondisiObj = null;
+    let chartLokasiObj = null;
+
+    function initSignaturePad() {
+      const canvas = document.getElementById('signatureCanvas');
+      if (canvas) {
+        signaturePad = new SignaturePad(canvas, { backgroundColor: 'rgb(255, 255, 255)' });
+      }
+    }
+
+    function clearSignature() {
+      if (signaturePad) signaturePad.clear();
+    }
+
+    function switchTab(tab) {
+      document.getElementById('sectionAudit')?.classList.add('hidden');
+      document.getElementById('sectionTable')?.classList.add('hidden');
+      document.getElementById('sectionLogs')?.classList.add('hidden');
+      
+      const bAudit = document.getElementById('btnTabAudit');
+      const bTable = document.getElementById('btnTabTable');
+      const bLogs = document.getElementById('btnTabLogs');
+
+      if (bAudit) bAudit.className = "px-4 py-2 rounded-lg text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition";
+      if (bTable) bTable.className = "px-4 py-2 rounded-lg text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition";
+      if (bLogs) bLogs.className = "px-4 py-2 rounded-lg text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition";
+
+      if (tab === 'audit') {
+        document.getElementById('sectionAudit')?.classList.remove('hidden');
+        if (bAudit) bAudit.className = "px-4 py-2 rounded-lg text-sm font-semibold bg-blue-600 text-white shadow-sm transition";
+      } else if (tab === 'table') {
+        document.getElementById('sectionTable')?.classList.remove('hidden');
+        if (bTable) bTable.className = "px-4 py-2 rounded-lg text-sm font-semibold bg-blue-600 text-white shadow-sm transition";
+        renderTable();
+      } else if (tab === 'logs') {
+        document.getElementById('sectionLogs')?.classList.remove('hidden');
+        if (bLogs) bLogs.className = "px-4 py-2 rounded-lg text-sm font-semibold bg-blue-600 text-white shadow-sm transition";
+        renderLogs();
+      }
+    }
+
+    window.updateDashboardAndUI = function() {
+      const data = window.assetsData || [];
+      const total = data.length;
+      const audited = data.filter(a => a.statusAudit === 'Sudah Audit');
+      const countAudited = audited.length;
+      const percent = total > 0 ? Math.round((countAudited / total) * 100) : 0;
+
+      let qtyBaik = 0, qtyRusakRingan = 0, qtyScrap = 0, qtyHilang = 0;
+      audited.forEach(a => {
+        qtyBaik += parseInt(a.qtyBaik || 0);
+        qtyRusakRingan += parseInt(a.qtyRusakRingan || 0);
+        qtyScrap += parseInt(a.qtyScrap || 0);
+        qtyHilang += parseInt(a.qtyHilang || 0);
+      });
+
+      const sTotal = document.getElementById('statTotal');
+      const sAudit = document.getElementById('statAudit');
+      const sPercent = document.getElementById('statAuditPercent');
+      const sBaik = document.getElementById('statQtyBaik');
+      const sRusak = document.getElementById('statQtyRusak');
+      const sHilang = document.getElementById('statQtyHilang');
+
+      if (sTotal) sTotal.innerText = total;
+      if (sAudit) sAudit.innerText = countAudited;
+      if (sPercent) sPercent.innerText = `${percent}% Progress`;
+      if (sBaik) sBaik.innerText = qtyBaik;
+      if (sRusak) sRusak.innerText = qtyRusakRingan + qtyScrap;
+      if (sHilang) sHilang.innerText = qtyHilang;
+
+      populateAssetDropdown();
+      renderTable();
+      renderCharts(qtyBaik, qtyRusakRingan, qtyScrap, qtyHilang, data);
+    };
+
+    // RENDER CHART ANALITIK VISUAL (FITUR NO 4)
+    function renderCharts(qtyBaik, qtyRusakRingan, qtyScrap, qtyHilang, data) {
+      // 1. Doughnut Chart Kondisi Fisik
+      const ctxKondisi = document.getElementById('chartKondisi')?.getContext('2d');
+      if (ctxKondisi) {
+        if (chartKondisiObj) chartKondisiObj.destroy();
+        chartKondisiObj = new Chart(ctxKondisi, {
+          type: 'doughnut',
+          data: {
+            labels: ['Baik', 'Rusak Ringan', 'Scrap', 'Hilang'],
+            datasets: [{
+              data: [qtyBaik, qtyRusakRingan, qtyScrap, qtyHilang],
+              backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#a855f7']
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } }
+          }
+        });
+      }
+
+      // 2. Bar Chart Per Lokasi (Master vs Audit Qty)
+      const ctxLokasi = document.getElementById('chartLokasi')?.getContext('2d');
+      if (ctxLokasi) {
+        const locationMap = {};
+        data.forEach(item => {
+          const loc = item.lokasiLama || 'Unassigned';
+          if (!locationMap[loc]) locationMap[loc] = { master: 0, audited: 0 };
+          locationMap[loc].master += parseInt(item.qtyMaster || 1);
+          if (item.statusAudit === 'Sudah Audit') {
+            locationMap[loc].audited += (parseInt(item.qtyBaik || 0) + parseInt(item.qtyRusakRingan || 0) + parseInt(item.qtyScrap || 0) + parseInt(item.qtyHilang || 0));
+          }
+        });
+
+        const labels = Object.keys(locationMap);
+        const masterData = labels.map(l => locationMap[l].master);
+        const auditedData = labels.map(l => locationMap[l].audited);
+
+        if (chartLokasiObj) chartLokasiObj.destroy();
+        chartLokasiObj = new Chart(ctxLokasi, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [
+              { label: 'Qty Master', data: masterData, backgroundColor: '#64748b' },
+              { label: 'Qty Audit Ditemukan', data: auditedData, backgroundColor: '#2563eb' }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true } },
+            plugins: { legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } } }
+          }
+        });
+      }
+    }
+
+    function populateAssetDropdown() {
+      const select = document.getElementById('selectAssetId');
+      if (!select) return;
+
+      const searchVal = (document.getElementById('assetSearchInput')?.value || '').toLowerCase();
+      const currentVal = select.value;
+
+      select.innerHTML = '<option value="">-- Pilih Aset Belum Diaudit --</option>';
+
+      const list = window.assetsData || [];
+      const unAuditedList = list.filter(a => a.statusAudit === 'Belum Audit');
+      
+      const countSpan = document.getElementById('unAuditedCount');
+      if (countSpan) countSpan.innerText = unAuditedList.length;
+
+      const filtered = unAuditedList.filter(a => 
+        (a.noAset || '').toLowerCase().includes(searchVal) ||
+        (a.namaAset || '').toLowerCase().includes(searchVal)
+      );
+
+      filtered.forEach(asset => {
+        const opt = document.createElement('option');
+        opt.value = asset.id;
+        opt.innerText = `${asset.noAset} - ${asset.namaAset} (${asset.lokasiLama})`;
+        select.appendChild(opt);
+      });
+
+      if (currentVal && filtered.some(a => a.id === currentVal)) {
+        select.value = currentVal;
+      }
+    }
+
+    function filterAssetDropdown() { populateAssetDropdown(); }
+
+    function setElementText(id, text) {
+      const el = document.getElementById(id);
+      if (el) el.innerText = text;
+    }
+
+    function setInputValue(id, val) {
+      const el = document.getElementById(id);
+      if (el) el.value = val;
+    }
+
+    function onAssetSelected() {
+      const select = document.getElementById('selectAssetId');
+      if (!select) return;
+
+      const id = select.value;
+      if (!id) {
+        selectedAsset = null;
+        document.getElementById('auditFormContainer')?.classList.add('hidden');
+        return;
+      }
+
+      selectedAsset = (window.assetsData || []).find(a => a.id === id);
+      if (!selectedAsset) return;
+
+      const isAudited = selectedAsset.statusAudit === 'Sudah Audit';
+      setElementText('auditModeLabel', isAudited ? 'Edit / Revisi Hasil Audit' : 'Input Verifikasi Field');
+      setElementText('btnSubmitAuditLabel', isAudited ? 'Update / Perbarui Audit' : 'Simpan Hasil Audit & Sign');
+
+      setElementText('oldNoAset', selectedAsset.noAset || '-');
+      setElementText('oldNamaAset', selectedAsset.namaAset || '-');
+      setElementText('oldQtyMaster', `${selectedAsset.qtyMaster || 1} Unit`);
+      setElementText('oldLokasi', selectedAsset.lokasiLama || '-');
+      setElementText('oldPic', selectedAsset.picLama || '-');
+      setElementText('oldKondisiBadge', selectedAsset.kondisiLama || '-');
+      setElementText('oldStatusAset', selectedAsset.statusAsetLama || '-');
+      setElementText('oldKeterangan', selectedAsset.keteranganLama || '-');
+      setElementText('oldStatusAudit', selectedAsset.statusAudit || 'Belum Audit');
+
+      const imgOld = document.getElementById('oldFotoImg');
+      const phOld = document.getElementById('oldFotoPlaceholder');
+      if (selectedAsset.fotoLama && imgOld) {
+        imgOld.src = selectedAsset.fotoLama;
+        imgOld.classList.remove('hidden');
+        if (phOld) phOld.classList.add('hidden');
+      } else if (imgOld) {
+        imgOld.classList.add('hidden');
+        if (phOld) phOld.classList.remove('hidden');
+      }
+
+      setInputValue('qtyBaik', isAudited ? (selectedAsset.qtyBaik || 0) : (selectedAsset.qtyMaster || 1));
+      setInputValue('qtyRusakRingan', selectedAsset.qtyRusakRingan || 0);
+      setInputValue('qtyScrap', selectedAsset.qtyScrap || 0);
+      setInputValue('qtyHilang', selectedAsset.qtyHilang || 0);
+      calcTotalAuditQty();
+
+      setInputValue('newLokasi', selectedAsset.lokasiBaru || selectedAsset.lokasiLama || '');
+      setInputValue('newKondisi', selectedAsset.kondisiBaru || selectedAsset.kondisiLama || 'Baik');
+      setInputValue('newStatusAset', selectedAsset.statusAsetBaru || selectedAsset.statusAsetLama || 'Aktif / Used');
+      setInputValue('newPic', selectedAsset.picBaru || selectedAsset.picLama || '');
+      setInputValue('newKeterangan', selectedAsset.keteranganBaru || '');
+
+      multiFotoBase64 = selectedAsset.multiFoto || ["", "", ""];
+      for (let i = 0; i < 3; i++) {
+        const img = document.getElementById(`previewMulti${i}`);
+        const ph = document.getElementById(`phMulti${i}`);
+        if (multiFotoBase64[i] && img) {
+          img.src = multiFotoBase64[i];
+          img.classList.remove('hidden');
+          if (ph) ph.classList.add('hidden');
+        } else if (img) {
+          img.classList.add('hidden');
+          if (ph) ph.classList.remove('hidden');
+        }
+      }
+
+      clearSignature();
+      if (selectedAsset.signature && signaturePad) {
+        signaturePad.fromDataURL(selectedAsset.signature);
+      }
+
+      document.getElementById('auditFormContainer')?.classList.remove('hidden');
+    }
+
+    function calcTotalAuditQty() {
+      const b = parseInt(document.getElementById('qtyBaik')?.value || 0);
+      const rr = parseInt(document.getElementById('qtyRusakRingan')?.value || 0);
+      const sc = parseInt(document.getElementById('qtyScrap')?.value || 0);
+      const h = parseInt(document.getElementById('qtyHilang')?.value || 0);
+      const total = b + rr + sc + h;
+
+      setElementText('sumAuditQty', `${total} Unit`);
+      const masterQty = parseInt(selectedAsset?.qtyMaster || 1);
+      const diffSpan = document.getElementById('qtyDiffStatus');
+
+      if (diffSpan) {
+        if (total === masterQty) {
+          diffSpan.className = "px-2 py-0.5 rounded font-bold bg-emerald-100 text-emerald-800";
+          diffSpan.innerText = "Sesuai Qty";
+        } else if (total < masterQty) {
+          diffSpan.className = "px-2 py-0.5 rounded font-bold bg-rose-100 text-rose-800";
+          diffSpan.innerText = `Kurang ${masterQty - total} Unit`;
+        } else {
+          diffSpan.className = "px-2 py-0.5 rounded font-bold bg-amber-100 text-amber-800";
+          diffSpan.innerText = `Kelebihan ${total - masterQty} Unit`;
+        }
+      }
+    }
+
+    function previewMultiImage(e, index) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          multiFotoBase64[index] = evt.target.result;
+          const img = document.getElementById(`previewMulti${index}`);
+          if (img) {
+            img.src = evt.target.result;
+            img.classList.remove('hidden');
+          }
+          document.getElementById(`phMulti${index}`)?.classList.add('hidden');
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    async function handleSaveAudit(e) {
+      e.preventDefault();
+      if (!selectedAsset) return;
+
+      const sigData = signaturePad && !signaturePad.isEmpty() ? signaturePad.toDataURL() : selectedAsset.signature || '';
+
+      const isEdit = selectedAsset.statusAudit === 'Sudah Audit';
+      const updated = {
+        ...selectedAsset,
+        qtyBaik: parseInt(document.getElementById('qtyBaik')?.value || 0),
+        qtyRusakRingan: parseInt(document.getElementById('qtyRusakRingan')?.value || 0),
+        qtyScrap: parseInt(document.getElementById('qtyScrap')?.value || 0),
+        qtyHilang: parseInt(document.getElementById('qtyHilang')?.value || 0),
+        lokasiBaru: document.getElementById('newLokasi')?.value || '',
+        kondisiBaru: document.getElementById('newKondisi')?.value || 'Baik',
+        statusAsetBaru: document.getElementById('newStatusAset')?.value || 'Aktif / Used',
+        picBaru: document.getElementById('newPic')?.value || '',
+        keteranganBaru: document.getElementById('newKeterangan')?.value || '',
+        multiFoto: multiFotoBase64,
+        signature: sigData,
+        statusAudit: 'Sudah Audit',
+        tanggalAudit: new Date().toISOString().split('T')[0]
+      };
+
+      const actionText = isEdit ? 'Revisi/Edit audit' : 'Audit baru';
+      const logMsg = `${actionText} selesai untuk No. Aset ${updated.noAset} (${updated.namaAset}) oleh ${updated.picBaru}`;
+      await window.saveAssetToStorage(updated, logMsg);
+      document.getElementById('auditFormContainer')?.classList.add('hidden');
+    }
+
+    function editAuditDirect(id) {
+      switchTab('audit');
+      const item = (window.assetsData || []).find(a => a.id === id);
+      if (item) {
+        const select = document.getElementById('selectAssetId');
+        if (select) {
+          let opt = select.querySelector(`option[value="${id}"]`);
+          if (!opt) {
+            opt = document.createElement('option');
+            opt.value = item.id;
+            opt.innerText = `[REVISI] ${item.noAset} - ${item.namaAset}`;
+            select.appendChild(opt);
+          }
+          select.value = id;
+          onAssetSelected();
+        }
+      }
+    }
+
+    // Barcode Scanner Modal
+    function openScannerModal() {
+      document.getElementById('scannerModal')?.classList.remove('hidden');
+      html5QrcodeScanner = new Html5Qrcode("reader");
+      html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (decodedText) => {
+        closeScannerModal();
+        const found = (window.assetsData || []).find(a => (a.noAset || '').toLowerCase() === decodedText.toLowerCase());
+        if (found) {
+          editAuditDirect(found.id);
+          Swal.fire({ icon: 'success', title: 'Barcode Ditemukan!', text: `${found.noAset} - ${found.namaAset}`, timer: 1500, showConfirmButton: false });
+        } else {
+          Swal.fire('Tidak Ditemukan', `Barcode ${decodedText} tidak ada di master aset.`, 'warning');
+        }
+      }).catch(err => console.error("Scanner error:", err));
+    }
+
+    function closeScannerModal() {
+      if (html5QrcodeScanner) {
+        html5QrcodeScanner.stop().then(() => {
+          document.getElementById('scannerModal')?.classList.add('hidden');
+        }).catch(() => document.getElementById('scannerModal')?.classList.add('hidden'));
+      } else {
+        document.getElementById('scannerModal')?.classList.add('hidden');
+      }
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('assetTableBody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+      (window.assetsData || []).forEach((item, idx) => {
+        const isAudited = item.statusAudit === 'Sudah Audit';
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50";
+        tr.innerHTML = `
+          <td class="p-3 text-center">${idx + 1}</td>
+          <td class="p-3 font-bold">${item.noAset || '-'}</td>
+          <td class="p-3">${item.namaAset || '-'}</td>
+          <td class="p-3 text-center font-bold text-blue-700">${item.qtyMaster || 1}</td>
+          <td class="p-3">
+            ${isAudited ? `
+              <div class="flex items-center space-x-1 text-[11px] font-bold">
+                <span class="text-emerald-700" title="Baik">${item.qtyBaik || 0}B</span> / 
+                <span class="text-amber-700" title="Rusak Ringan">${item.qtyRusakRingan || 0}RR</span> / 
+                <span class="text-rose-700" title="Scrap">${item.qtyScrap || 0}Scrap</span> / 
+                <span class="text-purple-700" title="Hilang">${item.qtyHilang || 0}H</span>
+              </div>
+            ` : '<span class="text-slate-400">-</span>'}
+          </td>
+          <td class="p-3"><div>${item.lokasiLama || '-'}</div>${isAudited ? `<div class="font-bold text-blue-600">➡ ${item.lokasiBaru || '-'}</div>` : ''}</td>
+          <td class="p-3"><div>${item.picLama || '-'}</div>${isAudited ? `<div class="font-bold">${item.picBaru || '-'}</div>` : ''}</td>
+          <td class="p-3 text-center"><span class="px-2 py-1 rounded text-xs font-bold ${isAudited ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100'}">${item.statusAudit || 'Belum Audit'}</span></td>
+          <td class="p-3 text-center space-x-1">
+            <button onclick="editAuditDirect('${item.id}')" title="Edit Hasil Audit" class="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg">
+              <i data-lucide="edit" class="w-4 h-4"></i>
+            </button>
+            <button onclick="window.deleteAssetFromStorage('${item.id}')" title="Hapus Aset" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+      lucide.createIcons();
+    }
+
+    window.renderLogs = function() {
+      const c = document.getElementById('logsContainer');
+      if (!c) return;
+      c.innerHTML = (window.auditLogs || []).map(l => `
+        <div class="bg-slate-50 p-2.5 rounded border border-slate-200 flex justify-between">
+          <span class="text-slate-700">📌 ${l.message}</span>
+          <span class="text-slate-400 text-[10px]">${new Date(l.timestamp).toLocaleString('id-ID')}</span>
+        </div>
+      `).join('') || '<div class="text-slate-400">Belum ada log aktivitas.</div>';
+    };
+
+    function openAddMasterModal() { document.getElementById('addMasterModal')?.classList.remove('hidden'); }
+    function closeAddMasterModal() { document.getElementById('addMasterModal')?.classList.add('hidden'); }
+
+    async function handleAddMaster(e) {
+      e.preventDefault();
+      const newM = {
+        id: "ast-" + Date.now(),
+        noAset: document.getElementById('mNoAset')?.value || '',
+        namaAset: document.getElementById('mNamaAset')?.value || '',
+        qtyMaster: parseInt(document.getElementById('mQtyMaster')?.value || 1),
+        lokasiLama: document.getElementById('mLokasi')?.value || '',
+        kondisiLama: document.getElementById('mKondisi')?.value || 'Baik',
+        statusAsetLama: document.getElementById('mStatusAset')?.value || 'Aktif / Used',
+        picLama: document.getElementById('mPic')?.value || '',
+        keteranganLama: document.getElementById('mKeterangan')?.value || '',
+        statusAudit: 'Belum Audit'
+      };
+      await window.saveAssetToStorage(newM, `Master Aset ${newM.noAset} berhasil ditambahkan`);
+      closeAddMasterModal();
+    }
+
+    function exportToExcel() {
+      const rows = (window.assetsData || []).map((a, i) => ({
+        "No": i+1, "No Aset": a.noAset, "Nama Aset": a.namaAset, "Qty Master": a.qtyMaster || 1,
+        "Qty Baik": a.qtyBaik || 0, "Qty Rusak Ringan": a.qtyRusakRingan || 0, "Qty Scrap": a.qtyScrap || 0, "Qty Hilang": a.qtyHilang || 0,
+        "Lokasi Lama": a.lokasiLama, "Lokasi Baru": a.lokasiBaru || "-", "Status Audit": a.statusAudit
+      }));
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Laporan Audit");
+      XLSX.writeFile(wb, `Laporan_Audit_${Date.now()}.xlsx`);
+    }
+
+    function handleImportExcel(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async function(evt) {
+        const data = new Uint8Array(evt.target.result);
+        const wb = XLSX.read(data, { type: 'array' });
+        const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+        for (let r of json) {
+          await window.saveAssetToStorage({
+            id: "ast-" + Date.now() + "-" + Math.floor(Math.random()*1000),
+            noAset: r["No Aset"] || r["No. Aset"] || `AST-${Date.now()}`,
+            namaAset: r["Nama Aset"] || "Aset",
+            qtyMaster: parseInt(r["Qty Master"] || r["Qty"] || 1),
+            lokasiLama: r["Lokasi Lama"] || "Gudang",
+            kondisiLama: r["Kondisi Lama"] || "Baik",
+            statusAsetLama: "Aktif",
+            picLama: r["PIC"] || "Admin",
+            statusAudit: "Belum Audit"
+          });
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function printBeritaAcara() {
+      const tb = document.getElementById('printTableBody');
+      if (tb) {
+        tb.innerHTML = (window.assetsData || []).map((a, i) => `
+          <tr>
+            <td class="border border-slate-400 p-1 text-center">${i+1}</td>
+            <td class="border border-slate-400 p-1 font-bold">${a.noAset}</td>
+            <td class="border border-slate-400 p-1">${a.namaAset}</td>
+            <td class="border border-slate-400 p-1 text-center">${a.qtyMaster || 1}</td>
+            <td class="border border-slate-400 p-1 font-bold">${a.qtyBaik||0}B / ${a.qtyRusakRingan||0}RR / ${a.qtyScrap||0}Scrap / ${a.qtyHilang||0}H</td>
+            <td class="border border-slate-400 p-1">${a.lokasiLama} / <strong>${a.lokasiBaru || '-'}</strong></td>
+            <td class="border border-slate-400 p-1 text-center">${a.statusAudit}</td>
+          </tr>
+        `).join('');
+      }
+      window.print();
+    }
+  </script>
+</body>
+</html>
