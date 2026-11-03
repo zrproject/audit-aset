@@ -8,7 +8,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- SheetJS untuk Export & Import Excel -->
+  <!-- SheetJS untuk Import Excel -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.min.js"></script>
   <!-- SweetAlert2 -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -22,7 +22,7 @@
     @media print {
       body * { visibility: hidden; }
       #printableBA, #printableBA * { visibility: visible; }
-      #printableBA { position: absolute; left: 0; top: 0; width: 100%; }
+      #printableBA { position: absolute; left: 0; top: 0; width: 100%; display: block !important; }
     }
   </style>
 </head>
@@ -36,8 +36,7 @@
           <i data-lucide="shield-check" class="w-6 h-6"></i>
         </div>
         <div>
-          <h1 class="font-bold text-lg leading-tight">Audit Aset Advanced</h1>
-          <p class="text-xs text-slate-400">Kamera In-App • Master CRUD • Breakdown Qty • Export Foto Excel</p>
+          <h1 class="font-bold text-lg leading-tight">Audit Aset KMSh</h1>
         </div>
       </div>
       
@@ -131,7 +130,7 @@
         </label>
         <button onclick="exportToExcel()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium flex items-center space-x-1.5 transition">
           <i data-lucide="download" class="w-4 h-4"></i>
-          <span>Export Excel</span>
+          <span>Export Laporan Foto</span>
         </button>
         <button onclick="printBeritaAcara()" class="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium flex items-center space-x-1.5 transition">
           <i data-lucide="printer" class="w-4 h-4"></i>
@@ -282,11 +281,9 @@
                 <div>
                   <label class="block text-xs font-semibold text-slate-700 mb-1">Status Aset Baru</label>
                   <select id="newStatusAset" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
-                    <option value="Aktif / Used">Aktif / Used</option>
-                    <option value="Idle / Cadangan">Idle / Cadangan</option>
+                    <option value="Aktif / Used">Aktif</option>
                     <option value="Mutasi / Pindah">Mutasi / Pindah</option>
                     <option value="Perlu Perbaikan">Perlu Perbaikan</option>
-                    <option value="Usul Afkir">Usul Afkir</option>
                   </select>
                 </div>
               </div>
@@ -298,12 +295,12 @@
 
               <!-- MULTI FOTO BUKTI AUDIT (DENGAN KAMERA IN-APP & GALERI) -->
               <div class="space-y-2">
-                <label class="block text-xs font-semibold text-slate-700">Multi-Foto Temuan Lapangan (Kamera In-App / Galeri):</label>
+                <label class="block text-xs font-semibold text-slate-700">Foto Temuan Lapangan:</label>
                 <div class="grid grid-cols-3 gap-2">
                   
                   <!-- Slot 1 -->
                   <div class="bg-white p-2 rounded-lg border border-slate-200 space-y-1">
-                    <span class="text-[10px] text-slate-700 font-bold block text-center">1. Fisik Utama</span>
+                    <span class="text-[10px] text-slate-700 font-bold block text-center">1. Foto 1</span>
                     <div class="h-20 bg-slate-100 rounded border border-slate-300 overflow-hidden flex items-center justify-center relative">
                       <img id="previewMulti0" class="w-full h-full object-cover hidden">
                       <span id="phMulti0" class="text-[10px] text-slate-400">Kosong</span>
@@ -323,7 +320,7 @@
 
                   <!-- Slot 2 -->
                   <div class="bg-white p-2 rounded-lg border border-slate-200 space-y-1">
-                    <span class="text-[10px] text-slate-700 font-bold block text-center">2. Tag Barcode</span>
+                    <span class="text-[10px] text-slate-700 font-bold block text-center">2. Foto 2</span>
                     <div class="h-20 bg-slate-100 rounded border border-slate-300 overflow-hidden flex items-center justify-center relative">
                       <img id="previewMulti1" class="w-full h-full object-cover hidden">
                       <span id="phMulti1" class="text-[10px] text-slate-400">Kosong</span>
@@ -343,7 +340,7 @@
 
                   <!-- Slot 3 -->
                   <div class="bg-white p-2 rounded-lg border border-slate-200 space-y-1">
-                    <span class="text-[10px] text-slate-700 font-bold block text-center">3. Kerusakan</span>
+                    <span class="text-[10px] text-slate-700 font-bold block text-center">3. Foto 3</span>
                     <div class="h-20 bg-slate-100 rounded border border-slate-300 overflow-hidden flex items-center justify-center relative">
                       <img id="previewMulti2" class="w-full h-full object-cover hidden">
                       <span id="phMulti2" class="text-[10px] text-slate-400">Kosong</span>
@@ -383,7 +380,7 @@
               <div class="pt-2">
                 <button type="submit" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition flex items-center justify-center space-x-2">
                   <i data-lucide="save" class="w-4 h-4"></i>
-                  <span id="btnSubmitAuditLabel">Simpan Hasil Audit & Sign</span>
+                  <span id="btnSubmitAuditLabel">Simpan Hasil Audit</span>
                 </button>
               </div>
             </form>
@@ -398,9 +395,9 @@
         <div>
           <h2 class="text-lg font-bold text-slate-800 flex items-center space-x-2">
             <i data-lucide="file-spreadsheet" class="w-5 h-5 text-emerald-600"></i>
-            <span>Matriks Laporan Audit Aset & Master CRUD</span>
+            <span>Matriks Laporan Audit Aset </span>
           </h2>
-          <p class="text-xs text-slate-500">Tabel master aset (beserta model & satuan), edit master, edit hasil audit, dan rincian fisik.</p>
+          <p class="text-xs text-slate-500">Tabel master aset & hasil audit.</p>
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
@@ -425,11 +422,11 @@
               <th class="p-3 border-b border-slate-700">No. Aset</th>
               <th class="p-3 border-b border-slate-700">Nama & Model Aset</th>
               <th class="p-3 border-b border-slate-700 text-center bg-slate-700">Qty Master & Satuan</th>
-              <th class="p-3 border-b border-slate-700 bg-slate-700">Rincian Qty Audit (B / RR / Scrap / H)</th>
+              <th class="p-3 border-b border-slate-700 bg-slate-700">Qty Audit (Baik / Rusak Ringan / Scrap / Hilang)</th>
               <th class="p-3 border-b border-slate-700">Lokasi (Lama / Baru)</th>
               <th class="p-3 border-b border-slate-700">PIC (Lama / Baru)</th>
               <th class="p-3 border-b border-slate-700 text-center">Status Audit</th>
-              <th class="p-3 border-b border-slate-700 text-center">Aksi Master & Audit</th>
+              <th class="p-3 border-b border-slate-700 text-center">Aksi</th>
             </tr>
           </thead>
           <tbody id="assetTableBody" class="divide-y divide-slate-200 bg-white">
@@ -629,34 +626,37 @@
   <div id="printableBA" class="hidden p-8 bg-white text-slate-900">
     <div class="text-center border-b-2 border-slate-900 pb-4 mb-6">
       <h1 class="text-2xl font-bold uppercase tracking-wider">BERITA ACARA STOCK OPNAME & AUDIT ASET</h1>
-      <p class="text-sm text-slate-600">Nomor: BA-AUDIT/${new Date().getFullYear()}/${new Date().getMonth()+1}</p>
+      <p class="text-sm text-slate-600" id="baNomorText">Nomor: BA-AUDIT/2026/11</p>
     </div>
-    <div class="text-xs space-y-2 mb-6">
-      <p>Pada hari ini, <strong>${new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</strong>, telah dilaksanakan verifikasi fisik dan audit data aset perusahaan dengan rincian hasil sebagai berikut:</p>
+    <div class="text-xs space-y-2 mb-6 leading-relaxed">
+      <p>Pada hari ini, <strong id="baHariTanggal">-</strong>, telah dilaksanakan verifikasi fisik dan audit data aset perusahaan dengan rincian hasil stock opname sebagai berikut:</p>
     </div>
-    <table class="w-full border-collapse border border-slate-400 text-[10px] mb-6">
+    <table class="w-full border-collapse border border-slate-400 text-[10px] mb-8">
       <thead>
-        <tr class="bg-slate-200">
-          <th class="border border-slate-400 p-1">No</th>
-          <th class="border border-slate-400 p-1">No Aset</th>
-          <th class="border border-slate-400 p-1">Nama & Model Aset</th>
-          <th class="border border-slate-400 p-1">Qty & Satuan</th>
-          <th class="border border-slate-400 p-1">Rincian Audit (B/RR/Scrap/H)</th>
-          <th class="border border-slate-400 p-1">Lokasi (Lama / Baru)</th>
-          <th class="border border-slate-400 p-1">Status Audit</th>
+        <tr class="bg-slate-200 text-slate-800">
+          <th class="border border-slate-400 p-1.5 text-center">No</th>
+          <th class="border border-slate-400 p-1.5">No Aset</th>
+          <th class="border border-slate-400 p-1.5">Nama & Model Aset</th>
+          <th class="border border-slate-400 p-1.5 text-center">Qty Master</th>
+          <th class="border border-slate-400 p-1.5 text-center">Rincian Audit (B / RR / Scrap / H)</th>
+          <th class="border border-slate-400 p-1.5">Lokasi (Lama ➡ Baru)</th>
+          <th class="border border-slate-400 p-1.5">Status Audit</th>
         </tr>
       </thead>
       <tbody id="printTableBody">
-        <!-- Rows Generated for Print -->
+        <!-- Rows Generated Dynamically -->
       </tbody>
     </table>
-    <div class="grid grid-cols-2 gap-8 text-center text-xs mt-12">
+    <div class="text-xs space-y-1 mb-10">
+      <p>Demikian Berita Acara ini dibuat dengan sebenarnya berdasarkan hasil pemeriksaan fisik di lapangan.</p>
+    </div>
+    <div class="grid grid-cols-2 gap-8 text-center text-xs mt-12 page-break-inside-avoid">
       <div>
-        <p class="mb-12">Tim Auditor Lapangan,</p>
+        <p class="mb-16">Tim Auditor Lapangan,</p>
         <p class="font-bold underline">( ___________________ )</p>
       </div>
       <div>
-        <p class="mb-12">Mengetahui / Penanggung Jawab,</p>
+        <p class="mb-16">Mengetahui / Penanggung Jawab,</p>
         <p class="font-bold underline">( ___________________ )</p>
       </div>
     </div>
@@ -1395,31 +1395,114 @@
     }
 
     function exportToExcel() {
-      const rows = (window.assetsData || []).map((a, i) => ({
-        "No": i + 1, 
-        "No Aset": a.noAset, 
-        "Nama Aset": a.namaAset, 
-        "Model Aset": a.modelAset || "-", 
-        "Qty Master": a.qtyMaster || 1, 
-        "Satuan": a.satuan || "Unit",
-        "Qty Baik": a.qtyBaik || 0, 
-        "Qty Rusak Ringan": a.qtyRusakRingan || 0, 
-        "Qty Scrap": a.qtyScrap || 0, 
-        "Qty Hilang": a.qtyHilang || 0,
-        "Lokasi Lama": a.lokasiLama, 
-        "Lokasi Baru": a.lokasiBaru || "-", 
-        "PIC Lama": a.picLama || "-",
-        "PIC Baru": a.picBaru || "-",
-        "Status Audit": a.statusAudit,
-        "Foto Master": a.fotoLama || "-",
-        "Foto Fisik Utama": (a.multiFoto && a.multiFoto[0]) ? a.multiFoto[0] : "-",
-        "Foto Tag Barcode": (a.multiFoto && a.multiFoto[1]) ? a.multiFoto[1] : "-",
-        "Foto Detail Kerusakan": (a.multiFoto && a.multiFoto[2]) ? a.multiFoto[2] : "-"
-      }));
-      const ws = XLSX.utils.json_to_sheet(rows);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Laporan Audit");
-      XLSX.writeFile(wb, `Laporan_Audit_${Date.now()}.xlsx`);
+      const data = window.assetsData || [];
+      
+      let html = `
+        <!DOCTYPE html>
+        <html lang="id">
+        <head>
+          <meta charset="UTF-8">
+          <title>Laporan Audit Data Aset Perusahaan</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; color: #333; background: #f8fafc; }
+            h2 { text-align: center; margin-bottom: 5px; color: #1e293b; }
+            p.subtitle { text-align: center; font-size: 12px; color: #64748b; margin-bottom: 20px; }
+            table { border-collapse: collapse; width: 100%; font-size: 11px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+            th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; vertical-align: middle; }
+            th { background-color: #1e293b; color: #ffffff; font-weight: bold; text-align: center; }
+            .text-center { text-align: center; }
+            .font-bold { font-weight: bold; }
+            img { width: 70px; height: 70px; object-fit: cover; border-radius: 4px; border: 1px solid #cbd5e1; }
+            .sig-img { width: 120px; height: 50px; object-fit: contain; }
+          </style>
+        </head>
+        <body>
+          <h2>LAPORAN AUDIT & STOCK OPNAME ASET PERUSAHAAN</h2>
+          <p class="subtitle">Tanggal Export: ${new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+          <table>
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>No Aset</th>
+                <th>Nama & Model Aset</th>
+                <th>Qty Master</th>
+                <th>Rincian Audit Qty (Baik / RR / Scrap / Hilang)</th>
+                <th>Lokasi (Lama ➡ Baru)</th>
+                <th>PIC (Lama ➡ Baru)</th>
+                <th>Status Audit</th>
+                <th>Catatan / Keterangan</th>
+                <th>Foto Master</th>
+                <th>Foto Foto 1</th>
+                <th>Foto Foto 2</th>
+                <th>Foto Foto 3</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+
+      data.forEach((a, i) => {
+        const fotoMaster = a.fotoLama ? `<img src="${a.fotoLama}" />` : "-";
+        const fotoFisik = (a.multiFoto && a.multiFoto[0]) ? `<img src="${a.multiFoto[0]}" />` : "-";
+        const fotoBarcode = (a.multiFoto && a.multiFoto[1]) ? `<img src="${a.multiFoto[1]}" />` : "-";
+        const fotoKerusakan = (a.multiFoto && a.multiFoto[2]) ? `<img src="${a.multiFoto[2]}" />` : "-";
+        const sigTag = a.signature ? `<img src="${a.signature}" class="sig-img" />` : "-";
+
+        let ketGabung = [];
+        if (a.keteranganLama) ketGabung.push(`Master: ${a.keteranganLama}`);
+        if (a.keteranganBaru) ketGabung.push(`Audit: ${a.keteranganBaru}`);
+        const finalKet = ketGabung.length > 0 ? ketGabung.join('<br>') : '-';
+
+        html += `
+          <tr>
+            <td class="text-center">${i + 1}</td>
+            <td class="font-bold">${a.noAset || '-'}</td>
+            <td>
+              <strong>${a.namaAset || '-'}</strong><br>
+              <span style="color:#64748b;">Model: ${a.modelAset || '-'}</span>
+            </td>
+            <td class="text-center font-bold">${a.qtyMaster || 1} ${a.satuan || 'Unit'}</td>
+            <td class="text-center">
+              ${a.statusAudit === 'Sudah Audit' ? `
+                <span style="color: #10b981; font-weight:bold;">${a.qtyBaik || 0}B</span> / 
+                <span style="color: #f59e0b; font-weight:bold;">${a.qtyRusakRingan || 0}RR</span> / 
+                <span style="color: #ef4444; font-weight:bold;">${a.qtyScrap || 0}Scrap</span> / 
+                <span style="color: #a855f7; font-weight:bold;">${a.qtyHilang || 0}H</span>
+              ` : '-'}
+            </td>
+            <td>
+              ${a.lokasiLama || '-'}<br>
+              <strong style="color: #2563eb;">➡ ${a.lokasiBaru || '-'}</strong>
+            </td>
+            <td>
+              ${a.picLama || '-'}<br>
+              <strong>${a.picBaru || '-'}</strong>
+            </td>
+            <td class="text-center font-bold">${a.statusAudit || 'Belum Audit'}</td>
+            <td>${finalKet}</td>
+            <td class="text-center">${fotoMaster}</td>
+            <td class="text-center">${fotoFisik}</td>
+            <td class="text-center">${fotoBarcode}</td>
+            <td class="text-center">${fotoKerusakan}</td>
+          </tr>
+        `;
+      });
+
+      html += `
+            </tbody>
+          </table>
+        </body>
+        </html>
+      `;
+
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Laporan_Audit_Lengkap_Foto_${Date.now()}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     }
 
     function handleImportExcel(e) {
@@ -1450,19 +1533,42 @@
     }
 
     function printBeritaAcara() {
+      const now = new Date();
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      const tanggalStr = now.toLocaleDateString('id-ID', options);
+      
+      document.getElementById('baNomorText').innerText = `Nomor: BA-AUDIT/${now.getFullYear()}/${now.getMonth() + 1}`;
+      document.getElementById('baHariTanggal').innerText = tanggalStr;
+
       const tb = document.getElementById('printTableBody');
       if (tb) {
-        tb.innerHTML = (window.assetsData || []).map((a, i) => `
-          <tr>
-            <td class="border border-slate-400 p-1 text-center">${i+1}</td>
-            <td class="border border-slate-400 p-1 font-bold">${a.noAset}</td>
-            <td class="border border-slate-400 p-1">${a.namaAset} <br><span style="color:#555">Model: ${a.modelAset || '-'}</span></td>
-            <td class="border border-slate-400 p-1 text-center">${a.qtyMaster || 1} ${a.satuan || 'Unit'}</td>
-            <td class="border border-slate-400 p-1 font-bold">${a.qtyBaik||0}B / ${a.qtyRusakRingan||0}RR / ${a.qtyScrap||0}Scrap / ${a.qtyHilang||0}H</td>
-            <td class="border border-slate-400 p-1">${a.lokasiLama} / <strong>${a.lokasiBaru || '-'}</strong></td>
-            <td class="border border-slate-400 p-1 text-center">${a.statusAudit}</td>
-          </tr>
-        `).join('');
+        const data = window.assetsData || [];
+        if (data.length === 0) {
+          tb.innerHTML = `<tr><td colspan="7" class="border border-slate-400 p-2 text-center text-slate-500">Belum ada data aset dalam sistem.</td></tr>`;
+        } else {
+          tb.innerHTML = data.map((a, i) => {
+            const isAudited = a.statusAudit === 'Sudah Audit';
+            const rincianQty = isAudited 
+              ? `${a.qtyBaik || 0} B / ${a.qtyRusakRingan || 0} RR / ${a.qtyScrap || 0} Scrap / ${a.qtyHilang || 0} H`
+              : '-';
+            const lokasiStr = isAudited ? `${a.lokasiLama} ➡ ${a.lokasiBaru || '-'}` : (a.lokasiLama || '-');
+
+            return `
+              <tr>
+                <td class="border border-slate-400 p-1.5 text-center">${i + 1}</td>
+                <td class="border border-slate-400 p-1.5 font-bold">${a.noAset || '-'}</td>
+                <td class="border border-slate-400 p-1.5">
+                  <strong>${a.namaAset || '-'}</strong><br>
+                  <span style="color:#555;">Model: ${a.modelAset || '-'}</span>
+                </td>
+                <td class="border border-slate-400 p-1.5 text-center font-bold">${a.qtyMaster || 1} ${a.satuan || 'Unit'}</td>
+                <td class="border border-slate-400 p-1.5 text-center font-semibold">${rincianQty}</td>
+                <td class="border border-slate-400 p-1.5">${lokasiStr}</td>
+                <td class="border border-slate-400 p-1.5 text-center font-bold">${a.statusAudit || 'Belum Audit'}</td>
+              </tr>
+            `;
+          }).join('');
+        }
       }
       window.print();
     }
