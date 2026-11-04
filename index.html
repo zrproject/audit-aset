@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistem Audit Data Aset Perusahaan Advanced</title>
+  <title>Sistem Audit Data Aset KMSh</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <!-- SheetJS untuk Import Excel -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <!-- ExcelJS untuk Export Excel + Embed Gambar Asli -->
   <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
   <!-- FileSaver.js untuk Download File Excel -->
@@ -133,7 +133,7 @@
           <input type="file" id="excelInput" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleImportExcel(event)">
         </label>
         
-        <!-- TOMBOL EXPORT .XLSX + GAMBAR MENGGUNAKAN EXCELJS -->
+        <!-- TOMBOL EXPORT .XLSX + GAMBAR DENGAN TITLE & SUMMARY -->
         <button onclick="exportToExcelJS()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium flex items-center space-x-1.5 transition shadow-sm">
           <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
           <span>Export Excel</span>
@@ -694,25 +694,25 @@
     window.assetsCollectionRef = null;
     window.logsCollectionRef = null;
 
-    // const dummyInitialAssets = [
-    //   {
-    //     id: "ast-101",
-    //     noAset: "AST-2026-001",
-    //     namaAset: "Laptop Dell Latitude",
-    //     modelAset: "Latitude 5420",
-    //     qtyMaster: 5,
-    //     satuan: "Unit",
-    //     lokasiLama: "Lantai 2 - Ruang IT",
-    //     fotoLama: "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=300",
-    //     kondisiLama: "Baik",
-    //     statusAsetLama: "Aktif / Used",
-    //     keteranganLama: "Pembelian unit 2024",
-    //     picLama: "Ahmad Rizky",
-    //     statusAudit: "Belum Audit",
-    //     qtyBaik: 0, qtyRusakRingan: 0, qtyScrap: 0, qtyHilang: 0,
-    //     lokasiBaru: "", kondisiBaru: "", statusAsetBaru: "", picBaru: "", keteranganBaru: "", multiFoto: [], signature: "", tanggalAudit: ""
-    //   }
-    // ];
+    const dummyInitialAssets = [
+      {
+        id: "ast-101",
+        noAset: "AST-2026-001",
+        namaAset: "Laptop Dell Latitude",
+        modelAset: "Latitude 5420",
+        qtyMaster: 5,
+        satuan: "Unit",
+        lokasiLama: "Lantai 2 - Ruang IT",
+        fotoLama: "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=300",
+        kondisiLama: "Baik",
+        statusAsetLama: "Aktif / Used",
+        keteranganLama: "Pembelian unit 2024",
+        picLama: "Ahmad Rizky",
+        statusAudit: "Belum Audit",
+        qtyBaik: 0, qtyRusakRingan: 0, qtyScrap: 0, qtyHilang: 0,
+        lokasiBaru: "", kondisiBaru: "", statusAsetBaru: "", picBaru: "", keteranganBaru: "", multiFoto: [], signature: "", tanggalAudit: ""
+      }
+    ];
 
     async function initFirebase() {
       const badgeDot = document.getElementById('statusDot');
@@ -732,10 +732,9 @@
 
         onSnapshot(window.assetsCollectionRef, (snapshot) => {
           if (snapshot.empty && window.assetsData.length === 0) {
-            // dummyInitialAssets.forEach(async (item) => {
-            //   await setDoc(doc(window.assetsCollectionRef, item.id), item);
-            // }
-            // );
+            dummyInitialAssets.forEach(async (item) => {
+              await setDoc(doc(window.assetsCollectionRef, item.id), item);
+            });
           } else {
             const list = [];
             snapshot.forEach(docSnap => list.push({ id: docSnap.id, ...docSnap.data() }));
@@ -764,7 +763,7 @@
       const badgeDot = document.getElementById('statusDot');
       const badgeText = document.getElementById('statusText');
       window.useFirestore = false;
-      // if (!window.assetsData.length) window.assetsData = dummyInitialAssets;
+      if (!window.assetsData.length) window.assetsData = dummyInitialAssets;
       if (badgeDot) badgeDot.className = "w-2.5 h-2.5 rounded-full bg-amber-500";
       if (badgeText) badgeText.innerText = "Mode Offline / Local Data";
       window.updateDashboardAndUI();
@@ -1417,7 +1416,7 @@
       document.getElementById('formMasterAset').reset();
     }
 
-    // MODUL EXPORT EXCEL (.XLSX) DENGAN EMBEDDED GAMBAR MENGGUNAKAN EXCELJS
+    // MODUL EXPORT EXCEL (.XLSX) DENGAN JUDUL, EMBEDDED GAMBAR, & SUMMARY BAWAH
     async function exportToExcelJS() {
       const data = window.assetsData || [];
       if (!data || data.length === 0) {
@@ -1427,7 +1426,7 @@
 
       Swal.fire({
         title: 'Membangun File .xlsx...',
-        html: 'Menata tabel dan memasukkan foto terkompresi ke sel Excel.',
+        html: '',
         allowOutsideClick: false,
         didOpen: () => Swal.showLoading()
       });
@@ -1436,70 +1435,102 @@
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Laporan Audit Aset');
 
-        // Setup Header Kolom Excel
-        worksheet.columns = [
-          { header: 'No', key: 'no', width: 6 },
-          { header: 'No Aset', key: 'noAset', width: 16 },
-          { header: 'Nama Aset', key: 'namaAset', width: 22 },
-          { header: 'Model Aset', key: 'modelAset', width: 18 },
-          { header: 'Qty Master', key: 'qtyMaster', width: 12 },
-          { header: 'Satuan', key: 'satuan', width: 10 },
-          { header: 'Qty Baik', key: 'qtyBaik', width: 10 },
-          { header: 'Qty Rusak Ringan', key: 'qtyRusakRingan', width: 16 },
-          { header: 'Qty Scrap', key: 'qtyScrap', width: 10 },
-          { header: 'Qty Hilang', key: 'qtyHilang', width: 10 },
-          { header: 'Lokasi Lama', key: 'lokasiLama', width: 18 },
-          { header: 'Lokasi Baru', key: 'lokasiBaru', width: 18 },
-          { header: 'PIC Lama', key: 'picLama', width: 16 },
-          { header: 'PIC Baru', key: 'picBaru', width: 16 },
-          { header: 'Status Audit', key: 'statusAudit', width: 14 },
-          { header: 'Catatan / Keterangan', key: 'keterangan', width: 28 },
-          { header: 'Foto 1', key: 'foto1', width: 18 },
-          { header: 'Foto 2', key: 'foto2', width: 18 },
-          { header: 'Foto 3', key: 'foto3', width: 18 }
+        // 1. TAMBAHKAN JUDUL LAPORAN DI BARIS 1
+        worksheet.mergeCells('A1:S1');
+        const titleCell = worksheet.getCell('A1');
+        titleCell.value = 'LAPORAN REKAPITULASI AUDIT ASET PERUSAHAAN (KMSh)';
+        titleCell.font = { name: 'Arial', size: 14, bold: true, color: { argb: 'FFFFFF' } };
+        titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '0F172A' } }; // Dark Slate
+        titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+        worksheet.getRow(1).height = 35;
+
+        // 2. SUBJUDUL TANGGAL EXPORT DI BARIS 2
+        worksheet.mergeCells('A2:S2');
+        const subTitleCell = worksheet.getCell('A2');
+        subTitleCell.value = `Tanggal Export: ${new Date().toLocaleString('id-ID')}`;
+        subTitleCell.font = { name: 'Arial', size: 10, italic: true, color: { argb: '334155' } };
+        subTitleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+        worksheet.getRow(2).height = 20;
+
+        // Baris 3 sebagai Spasi Pemisah
+        worksheet.getRow(3).height = 10;
+
+        // 3. TULIS HEADER TABEL EKSPLISIT DI BARIS KE-4
+        const headers = [
+          'No', 'No Aset', 'Nama Aset', 'Model Aset', 'Qty Master', 'Satuan',
+          'Qty Baik', 'Qty Rusak Ringan', 'Qty Scrap', 'Qty Hilang',
+          'Lokasi Lama', 'Lokasi Baru', 'PIC Lama', 'PIC Baru',
+          'Status Audit', 'Catatan / Keterangan', 'Foto 1', 'Foto 2', 'Foto 3'
         ];
 
-        // Format Styling Header
-        const headerRow = worksheet.getRow(1);
+        const headerRow = worksheet.getRow(4);
+        headerRow.values = headers;
         headerRow.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFF' } };
         headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '1E293B' } };
         headerRow.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
         headerRow.height = 28;
 
-        // Iterasi Data Aset
+        // Atur Lebar Kolom secara Manual
+        const colWidths = [6, 16, 22, 18, 12, 10, 10, 16, 10, 10, 18, 18, 16, 16, 14, 28, 18, 18, 18];
+        colWidths.forEach((w, idx) => {
+          worksheet.getColumn(idx + 1).width = w;
+        });
+
+        // Akumulasi Total Summary
+        let totalQtyMaster = 0;
+        let totalQtyBaik = 0;
+        let totalQtyRusakRingan = 0;
+        let totalQtyScrap = 0;
+        let totalQtyHilang = 0;
+
+        // 4. MASUKKAN DATA ASET (Mulai Baris ke-5)
         for (let i = 0; i < data.length; i++) {
           const a = data[i];
           const isAudited = a.statusAudit === 'Sudah Audit';
           
+          const qMaster = parseInt(a.qtyMaster || 1);
+          const qBaik = isAudited ? parseInt(a.qtyBaik || 0) : 0;
+          const qRR = isAudited ? parseInt(a.qtyRusakRingan || 0) : 0;
+          const qScrap = isAudited ? parseInt(a.qtyScrap || 0) : 0;
+          const qHilang = isAudited ? parseInt(a.qtyHilang || 0) : 0;
+
+          totalQtyMaster += qMaster;
+          totalQtyBaik += qBaik;
+          totalQtyRusakRingan += qRR;
+          totalQtyScrap += qScrap;
+          totalQtyHilang += qHilang;
+
           let ketGabung = [];
           if (a.keteranganLama) ketGabung.push(`Master: ${a.keteranganLama}`);
           if (a.keteranganBaru) ketGabung.push(`Audit: ${a.keteranganBaru}`);
 
-          const row = worksheet.addRow({
-            no: i + 1,
-            noAset: a.noAset || '-',
-            namaAset: a.namaAset || '-',
-            modelAset: a.modelAset || '-',
-            qtyMaster: a.qtyMaster || 1,
-            satuan: a.satuan || 'Unit',
-            qtyBaik: isAudited ? (a.qtyBaik || 0) : 0,
-            qtyRusakRingan: isAudited ? (a.qtyRusakRingan || 0) : 0,
-            qtyScrap: isAudited ? (a.qtyScrap || 0) : 0,
-            qtyHilang: isAudited ? (a.qtyHilang || 0) : 0,
-            lokasiLama: a.lokasiLama || '-',
-            lokasiBaru: isAudited ? (a.lokasiBaru || '-') : '-',
-            picLama: a.picLama || '-',
-            picBaru: isAudited ? (a.picBaru || '-') : '-',
-            statusAudit: a.statusAudit || 'Belum Audit',
-            keterangan: ketGabung.join(' | ') || '-'
-          });
+          const rowValues = [
+            i + 1,
+            a.noAset || '-',
+            a.namaAset || '-',
+            a.modelAset || '-',
+            qMaster,
+            a.satuan || 'Unit',
+            qBaik,
+            qRR,
+            qScrap,
+            qHilang,
+            a.lokasiLama || '-',
+            isAudited ? (a.lokasiBaru || '-') : '-',
+            a.picLama || '-',
+            isAudited ? (a.picBaru || '-') : '-',
+            a.statusAudit || 'Belum Audit',
+            ketGabung.join(' | ') || '-',
+            '', '', '' // Kolom kosong untuk slot Foto 1, 2, 3
+          ];
 
+          const row = worksheet.addRow(rowValues);
           row.height = 60;
           row.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
 
-          const rowIndex = i + 2;
+          const currentCellRow = 5 + i; // Indeks baris excel aktual
 
-          // Sisipkan Foto ke Sel Excel jika Ada
+          // Embed Gambar ke Sel Excel
           if (a.multiFoto && Array.isArray(a.multiFoto)) {
             for (let fIdx = 0; fIdx < 3; fIdx++) {
               const base64Img = a.multiFoto[fIdx];
@@ -1510,25 +1541,46 @@
                     extension: 'jpeg',
                   });
 
-                  const colIndex = 16 + fIdx; 
+                  // Kolom 17 (Q), 18 (R), 19 (S)
                   worksheet.addImage(imageId, {
-                    tl: { col: colIndex, row: rowIndex - 1 },
+                    tl: { col: 16 + fIdx, row: currentCellRow - 1 },
                     ext: { width: 70, height: 70 },
                     editAs: 'oneCell'
                   });
                 } catch (imgErr) {
-                  console.warn(`Gagal memasukkan gambar ke Excel pada baris ${rowIndex}:`, imgErr);
+                  console.warn(`Gagal memasukkan gambar pada baris ${currentCellRow}:`, imgErr);
                 }
               }
             }
           }
         }
 
+        // 5. BARIS REKAPITULASI SUMMARY DI BAGIAN BAWAH TABEL
+        const summaryRowValues = [
+          '', 'TOTAL KESELURUHAN', '', '', totalQtyMaster, '',
+          totalQtyBaik, totalQtyRusakRingan, totalQtyScrap, totalQtyHilang,
+          '', '', '', '', '', '', '', '', ''
+        ];
+
+        const summaryRow = worksheet.addRow(summaryRowValues);
+        summaryRow.height = 26;
+        summaryRow.font = { name: 'Arial', size: 10, bold: true, color: { argb: '0F172A' } };
+        summaryRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'E2E8F0' } };
+        summaryRow.alignment = { vertical: 'middle', horizontal: 'center' };
+
+        summaryRow.eachCell((cell) => {
+          cell.border = {
+            top: { style: 'thin', color: { argb: '94A3B8' } },
+            bottom: { style: 'double', color: { argb: '0F172A' } }
+          };
+        });
+
+        // 6. UNDUH FILE .XLSX
         const buffer = await workbook.xlsx.writeBuffer();
         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        saveAs(blob, `Laporan_Audit_Aset_KMS_${Date.now()}.xlsx`);
+        saveAs(blob, `Laporan_Audit_Aset_KMSh_${Date.now()}.xlsx`);
 
-        Swal.fire({ icon: 'success', title: 'Export .xlsx Berhasil!', text: 'File Excel lengkap dengan foto terkompresi siap dibuka.', timer: 2000, showConfirmButton: false });
+        Swal.fire({ icon: 'success', title: 'Export Berhasil!', text: '', timer: 2000, showConfirmButton: false });
 
       } catch (err) {
         console.error("Gagal export ExcelJS:", err);
